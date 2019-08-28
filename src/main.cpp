@@ -25,7 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 
 #include "BluetoothSerial.h" //Header File for Serial Bluetooth, will be added by default into Arduino
 
-BluetoothSerial ESP_BT; // Object for Bluetooth
+BluetoothSerial SerialBT;
 
 // an MPU9250 object with the MPU-9250 sensor on I2C bus 0 with address 0x68
 MPU9250 IMU(Wire, 0x68);
@@ -39,13 +39,48 @@ float input  = -1; // a variable to handle the inputs
 float input2 = -2;
 int checky   = 0; // just to check things
 
+void callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
+{
+    if (event == ESP_SPP_SRV_OPEN_EVT) {
+        Serial.println("Client Connected");
+    }
+}
+
+float parseFloat()
+{
+    char inputArr[ 8 ] = "";
+    int i              = 0;
+    int carriage       = 0;
+
+    while (SerialBT.available()) {
+        // Handling code here
+        inputArr[ i ] = char(SerialBT.read());
+        Serial.println(inputArr[ i ]);
+        if (inputArr[ i ] == '\n') {
+            carriage++;
+            break;
+        }
+        if (carriage == 3)
+            break;
+        i++;
+    }
+
+    return (atof(inputArr));
+}
+
 void setup()
 {
     // Our programs waits for serial
+    Serial.begin(115200);
     // Serial.begin(115200);
-    Serial.begin(9600);                // Start Serial monitor in 9600
-    ESP_BT.begin("ESP32_LED_Control"); // Name of your Bluetooth Signal
-    Serial.println("Bluetooth Device is Ready to Pair");
+    SerialBT.register_callback(callback);
+
+    if (!SerialBT.begin("ESP32")) {
+        Serial.println("An error occurred initializing Bluetooth");
+    }
+    else {
+        Serial.println("Bluetooth initialized");
+    }
     while (!Serial) {
     }
 
@@ -80,7 +115,7 @@ void setup()
     Serial.println("Complete Magnetometer Calibration");
 
     // Calibrate Gyroscope
-    Serial.println("Start Gyroscope Calibration...");
+    SerialBT.println("Start Gyroscope Calibration...");
     int status_gyro = IMU.calibrateGyro();
     Serial.println("Complete Gyroscope Calibration");
     if (status_gyro > 0) {
@@ -91,7 +126,7 @@ void setup()
     Serial.println("Start Accelerometer Calibration...");
     int status_accel = IMU.calibrateAccel();
     Serial.println("Complete Accelerometer Calibration");
-    if (status_gyro > 0) {
+    if (status_accel > 0) {
         Serial.println("Accelerometer Calibration Succesful!");
     }
 
@@ -109,36 +144,25 @@ void setup()
 
     // Number of cycles
     // Serial.println("Gimme number of cycles ");
-    delay(10000);
-    if ((Serial.available() > 0)) {
-        input = Serial.parseFloat();
-    }
-    else {
-        input = 69;
-    }
-    Serial.println(input);
-    cycles = input;
+    // delay(10000);
 
-    // Frequency of measurements
-    // Serial.println("Gimme freq of measurements ");
-    delay(10000);
-    if ((Serial.available() > 0)) {
-        input2 = Serial.parseFloat();
-    }
-    else {
-        input2 = 2;
-    }
+    input  = parseFloat();
+    Serial.println(input);
+
+    input2 = parseFloat();
     Serial.println(input2);
-    freq = input2;
+
+    cycles = input;
+    freq   = input2;
 }
 
 void loop()
 {
 
-    delay(10000);
+    delay(1000);
 
     // Number of cycles equals the number we entered before
-    cycles = input;
+    cycles = (int)input;
 
     // Period = 1/freq. That's the time of delay betweem two measurements
     float period  = 1 / freq;
@@ -147,14 +171,14 @@ void loop()
     // There's one final delay before we start taking measurements. We
     // once again check with the help of Serial
 
-    checky = Serial.parseFloat();
+    checky = (int)parseFloat();
     while (1) {
         // Serial.println("Gimme 69!!!!!!");
         if (checky == 69) {
             break;
         }
         delay(500);
-        checky = Serial.parseInt();
+        checky = (int)parseFloat();
         // Serial.println(checky);
         // Serial.println("Still into loop");
     }
