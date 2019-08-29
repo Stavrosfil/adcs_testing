@@ -32,12 +32,50 @@ MPU9250 IMU(Wire, 0x68);
 int status;
 String inString = "";
 
-int cycles   = 10; // number of cycles of measurements
-float period = 1;
-float freq   = 1;  // frequency of measurements, Hz
-float input  = -1; // a variable to handle the inputs
-float input2 = -2;
-int checky   = 0; // just to check things
+float freq = -1; // frequency of measurements, Hz
+int cycles = -1; // Number of measurement cycles (loops)
+
+void getMeasurements(int cycles, int freq)
+{
+    // Period = 1/freq. That's the time of delay betweem two measurements
+    int period = 1000 / freq;
+
+    for (int i = 0; i < cycles; i++) {
+
+        // read the sensor
+        IMU.readSensor();
+
+        // Send the data through the serial monitor
+        Serial.print(IMU.getAccelX_mss(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getAccelY_mss(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getAccelZ_mss(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getGyroX_rads(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getGyroY_rads(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getGyroZ_rads(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getMagX_uT(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getMagY_uT(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getMagZ_uT(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getMagBiasX_uT(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getMagBiasY_uT(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getMagBiasZ_uT(), 6);
+        Serial.print("\t");
+        Serial.print(IMU.getTemperature_C(), 6);
+        Serial.println("");
+
+        delay(period);
+    }
+}
 
 void callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
 {
@@ -48,20 +86,24 @@ void callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
 
 float parseFloat()
 {
-    char inputArr[ 8 ] = "";
-    int i              = 0;
-    int carriage       = 0;
+    char inputArr[ 80 ] = "";
+    int i               = 0;
+    int carriage        = 0;
 
     while (SerialBT.available()) {
+
         // Handling code here
         inputArr[ i ] = char(SerialBT.read());
-        Serial.println(inputArr[ i ]);
+
+        // Serial.println(inputArr[ i ]);
         if (inputArr[ i ] == '\n') {
             carriage++;
             break;
         }
-        if (carriage == 3)
-            break;
+
+        // if (carriage == 3 || i > 7)
+        // break;
+
         i++;
     }
 
@@ -115,7 +157,7 @@ void setup()
     Serial.println("Complete Magnetometer Calibration");
 
     // Calibrate Gyroscope
-    SerialBT.println("Start Gyroscope Calibration...");
+    Serial.println("Start Gyroscope Calibration...");
     int status_gyro = IMU.calibrateGyro();
     Serial.println("Complete Gyroscope Calibration");
     if (status_gyro > 0) {
@@ -133,95 +175,29 @@ void setup()
     Serial.println("D\t");
 
     // clear buffer?
-    // while(Serial.available()){Serial.read();}
-    // delay(1000);
 
     // Receive the number of cycles we want it to run
-    // put your main code here, to run repeatedly:
-    // while (Serial.available() > 0) {
 
     // Here we take the number of cycles and frequency of measurements
+    cycles = parseFloat();
+    Serial.println(cycles);
 
-    // Number of cycles
-    // Serial.println("Gimme number of cycles ");
-    // delay(10000);
-
-    input  = parseFloat();
-    Serial.println(input);
-
-    input2 = parseFloat();
-    Serial.println(input2);
-
-    cycles = input;
-    freq   = input2;
+    freq = parseFloat();
+    Serial.println(freq);
 }
 
 void loop()
 {
 
-    delay(1000);
-
-    // Number of cycles equals the number we entered before
-    cycles = (int)input;
-
-    // Period = 1/freq. That's the time of delay betweem two measurements
-    float period  = 1 / freq;
-    float delayyy = period * 1000; // Actually we want ms motherfucker
+    delay(500);
 
     // There's one final delay before we start taking measurements. We
     // once again check with the help of Serial
-
-    checky = (int)parseFloat();
-    while (1) {
-        // Serial.println("Gimme 69!!!!!!");
-        if (checky == 69) {
-            break;
-        }
-        delay(500);
-        checky = (int)parseFloat();
-        // Serial.println(checky);
-        // Serial.println("Still into loop");
-    }
-
-    delay(1000);
-
-    for (int i = 0; i < cycles; i++) {
-
-        // read the sensor
-        IMU.readSensor();
-
-        // Send the data through the serial monitor
-        Serial.print(IMU.getAccelX_mss(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getAccelY_mss(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getAccelZ_mss(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getGyroX_rads(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getGyroY_rads(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getGyroZ_rads(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagX_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagY_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagZ_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagBiasX_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagBiasY_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagBiasZ_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getTemperature_C(), 6);
-        Serial.println("");
-
-        delay(delayyy);
+    int checky = (int)parseFloat();
+    if (checky == 69) {
+        Serial.println(checky);
+        getMeasurements(cycles, freq);
     }
 
     Serial.println("E\t");
-
-    Serial.end();
 }
