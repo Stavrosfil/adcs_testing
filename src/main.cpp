@@ -30,10 +30,10 @@ BluetoothSerial SerialBT;
 // an MPU9250 object with the MPU-9250 sensor on I2C bus 0 with address 0x68
 MPU9250 IMU(Wire, 0x68);
 int status;
-String inString = "";
 
-float freq = -1; // frequency of measurements, Hz
-int cycles = -1; // Number of measurement cycles (loops)
+bool isConnected = false;
+float freq       = -1; // frequency of measurements, Hz
+int cycles       = -1; // Number of measurement cycles (loops)
 
 void getMeasurements(int cycles, int freq)
 {
@@ -46,32 +46,32 @@ void getMeasurements(int cycles, int freq)
         IMU.readSensor();
 
         // Send the data through the serial monitor
-        Serial.print(IMU.getAccelX_mss(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getAccelY_mss(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getAccelZ_mss(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getGyroX_rads(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getGyroY_rads(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getGyroZ_rads(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagX_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagY_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagZ_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagBiasX_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagBiasY_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getMagBiasZ_uT(), 6);
-        Serial.print("\t");
-        Serial.print(IMU.getTemperature_C(), 6);
-        Serial.println("");
+        SerialBT.print(IMU.getAccelX_mss(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getAccelY_mss(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getAccelZ_mss(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getGyroX_rads(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getGyroY_rads(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getGyroZ_rads(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getMagX_uT(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getMagY_uT(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getMagZ_uT(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getMagBiasX_uT(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getMagBiasY_uT(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getMagBiasZ_uT(), 6);
+        SerialBT.print("\t");
+        SerialBT.print(IMU.getTemperature_C(), 6);
+        SerialBT.println("");
 
         delay(period);
     }
@@ -81,6 +81,7 @@ void callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
 {
     if (event == ESP_SPP_SRV_OPEN_EVT) {
         Serial.println("Client Connected");
+        isConnected = true;
     }
 }
 
@@ -191,13 +192,15 @@ void loop()
 
     delay(500);
 
-    // There's one final delay before we start taking measurements. We
-    // once again check with the help of Serial
-    int checky = (int)parseFloat();
-    if (checky == 69) {
-        Serial.println(checky);
-        getMeasurements(cycles, freq);
-    }
+    if (isConnected) {
+        // There's one final delay before we start taking measurements. We
+        // once again check with the help of Serial
+        int checky = (int)parseFloat();
+        if (checky == 69) {
+            Serial.println(checky);
+            getMeasurements(cycles, freq);
+        }
 
-    Serial.println("E\t");
+        SerialBT.println("E\t");
+    }
 }
