@@ -75,6 +75,7 @@ void getMeasurements(int cycles, int freq)
 
         delay(period);
     }
+    SerialBT.println("E\t");
 }
 
 void callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
@@ -113,7 +114,6 @@ float parseFloat()
 
 void setup()
 {
-    // Our programs waits for serial
     Serial.begin(115200);
     // Serial.begin(115200);
     SerialBT.register_callback(callback);
@@ -124,10 +124,15 @@ void setup()
     else {
         Serial.println("Bluetooth initialized");
     }
-    while (!Serial) {
-    }
+    
+    // After we establish bluetooth communication, we have to wait until we have a serial input from MATLAB
+    // Then, the IMU initilization and calibration can start
+    while (!SerialBT.available()) {}
+    Serial.println("OK. I'm ESP32 and I'm listening to you... Wait for calibration commands.");
+    while(SerialBT.available()) {SerialBT.read();}
+    Serial.println("Received serial...");
 
-    // start communication with IMU
+    // Start Communication with IMU
     status = IMU.begin();
     if (status < 0) {
         Serial.println("IMU initialization unsuccessful");
@@ -147,13 +152,14 @@ void setup()
     IMU.setSrd(19);
 
     // Calibrate Magnetometer
-    Serial.print("Start Magnetometer Calibration. Please make oxtarakia in: 3,");
+    Serial.print("Start Magnetometer Calibration. Please make oxtarakia...");
+    SerialBT.print("Start Magnetometer Calibration. Please make oxtarakia... ");
     delay(1000);
-    Serial.print(" 2,");
-    delay(1000);
-    Serial.print(" 1,");
-    delay(1000);
-    Serial.print(" Go!");
+    // Serial.print(" 2,");
+    // delay(1000);
+    // Serial.print(" 1,");
+    // delay(1000);
+    // Serial.print(" Go!");
     IMU.calibrateMag();
     Serial.println("Complete Magnetometer Calibration");
 
@@ -167,40 +173,61 @@ void setup()
 
     // Calibrate Accelorometer
     Serial.println("Start Accelerometer Calibration...");
+    SerialBT.println("Start Accelerometer Calibration...");
     int status_accel = IMU.calibrateAccel();
     Serial.println("Complete Accelerometer Calibration");
+    SerialBT.println("Complete Accelerometer Calibration");
     if (status_accel > 0) {
         Serial.println("Accelerometer Calibration Succesful!");
+        SerialBT.println("Accelerometer Calibration Succesful!");
     }
 
     Serial.println("D\t");
+    SerialBT.println("D\t");
 
     // clear buffer?
 
     // Receive the number of cycles we want it to run
 
-    // Here we take the number of cycles and frequency of measurements
-    cycles = parseFloat();
-    Serial.println(cycles);
-
-    freq = parseFloat();
-    Serial.println(freq);
+    
 }
 
 void loop()
 {
+    Serial.println("New loop and waiting for input and it's right..."); // Just for test 
 
-    delay(500);
+    // Here we take the number of cycles and frequency of measurements
+    while (!SerialBT.available()) {}
+    cycles = parseFloat();
+    Serial.println(cycles);
+    while (!SerialBT.available()) {}
+    freq = parseFloat();
+    if (freq == 0) {
+        Serial.println("Frequency can't be 0, setting it to 10Hz...");
+        freq = 10;
+        }
+    Serial.println(freq);
+    
+
+    //delay(500);
 
     if (isConnected) {
-        // There's one final delay before we start taking measurements. We
-        // once again check with the help of Serial
-        int checky = (int)parseFloat();
-        if (checky == 69) {
-            Serial.println(checky);
-            getMeasurements(cycles, freq);
+        while (!SerialBT.available()) {}
+        while (1) {   
+            int checky = (int)parseFloat();
+            if (checky == 69) {
+                Serial.println(checky);
+                getMeasurements(cycles, freq);
+                break;
+            }
+            delay(500);
         }
-
-        SerialBT.println("E\t");
+        
+        while (SerialBT.available())
+        {
+             SerialBT.read(); 
+        }
+          
+        Serial.println("Cleaned shit, let's go again!");
     }
 }
